@@ -274,7 +274,10 @@ export const useEditor = create<Editor>()((set, get) => ({
 
   addAnnotation(a) {
     get().pushHistory()
-    set(s => ({ annotations: [...s.annotations, a], selectedAnnIds: [a.id] }))
+    // Stamped here rather than at each call site, so every way of creating an
+    // object — toolbar, paste, signature, dragging on the page — records it.
+    const stamped = a.initial ? a : ({ ...a, initial: { w: a.w, h: a.h } } as Annotation)
+    set(s => ({ annotations: [...s.annotations, stamped], selectedAnnIds: [stamped.id] }))
   },
 
   updateAnnotation(id, patch) {

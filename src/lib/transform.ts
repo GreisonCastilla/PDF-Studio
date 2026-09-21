@@ -15,6 +15,26 @@ export function translate(a: Annotation, dx: number, dy: number): Annotation {
   return moved as Annotation
 }
 
+/**
+ * Flips a box back to positive width and height, moving its origin to match.
+ *
+ * Dragging a corner past the opposite side makes the width or height negative.
+ * Lines keep the sign — for them it is a direction, not a size — but for every
+ * boxed object a negative size means the frame, the handles and the content stop
+ * agreeing on where the object actually is, so it is resolved immediately.
+ */
+export function normalizeBox(a: Annotation): Annotation {
+  if (a.type === 'line' || a.type === 'arrow') return a
+  if (a.w >= 0 && a.h >= 0) return a
+  return {
+    ...a,
+    x: a.w < 0 ? a.x + a.w : a.x,
+    y: a.h < 0 ? a.y + a.h : a.y,
+    w: Math.abs(a.w),
+    h: Math.abs(a.h),
+  } as Annotation
+}
+
 /** Rewrites the bounding box, rescaling ink strokes to match. */
 export function setBox(base: Annotation, box: Partial<Rect>): Annotation {
   const x = box.x ?? base.x
@@ -76,17 +96,30 @@ export function resize(
   if (Math.abs(w) < MIN_SIZE) w = Math.sign(w || 1) * MIN_SIZE
   if (Math.abs(h) < MIN_SIZE) h = Math.sign(h || 1) * MIN_SIZE
 
-  return setBox(base, { x, y, w, h })
+  // setBox first: it mirrors the ink strokes correctly while the sign is still
+  // negative. Only then is the frame flipped back to a positive size.
+  return normalizeBox(setBox(base, { x, y, w, h }))
 }
 
 /**
- * The size an object "wants" to be, used by the reset button:
- * an image's own proportions, a text box fitted to its content, ink tightened
- * around its strokes. Shapes have no intrinsic size, so they return null.
+ * The size the reset button returns to: the one the object had when it was
+ * inserted. Text is a special case — its height follows the content, so the
+ * original *width* is restored and the height re-fitted, otherwise resetting a
+ * paragraph would clip it.
+ *
+ * Objects created before this was recorded fall back to an intrinsic size: an
+ * image's own proportions, a text box fitted to its content, ink tightened
+ * around its strokes. Plain shapes have none, and return null.
  */
 export function naturalBox(
   ann: Annotation, assets: Record<string, ImageAsset>,
 ): Partial<Rect> | null {
+  if (ann.type === 'text') {
+    const w = ann.initial?.w ?? Math.abs(ann.w)
+    return { w, h: fittedHeight({ ...(ann as TextAnn), w }) }
+  }
+  if (ann.initial) return { w: ann.initial.w, h: ann.initial.h }
+
   switch (ann.type) {
     case 'image': {
       const asset = assets[(ann as ImageAnn).assetId]
@@ -94,17 +127,24 @@ export function naturalBox(
       const w = Math.abs(ann.w)
       return { w, h: w * (asset.height / asset.width) }
     }
-    case 'text':
-      return { h: fittedHeight(ann as TextAnn) }
     case 'draw':
     case 'highlight': {
       const a = ann as DrawAnn
       const b = pointsBounds(a.strokes, a.strokeWidth / 2)
-      return b.w > 0 && b.h > 0 ? b : null
+      return b.w > 0 && b.h > 0 ? { w: b.w, h: b.h } : null
     }
     default:
       return null
   }
+}
+
+/** True when resetting would actually change something. */
+export function canReset(ann: Annotation, assets: Record<string, ImageAsset>): boolean {
+  const target = naturalBox(ann, assets)
+  if (!target) return false
+  const sameW = target.w === undefined || Math.abs(target.w - Math.abs(ann.w)) < 0.5
+  const sameH = target.h === undefined || Math.abs(target.h - Math.abs(ann.h)) < 0.5
+  return !(sameW && sameH)
 }
 
 /** Aspect ratio of an annotation, or null when it has no usable one. */

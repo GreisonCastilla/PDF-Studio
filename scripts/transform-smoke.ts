@@ -4,7 +4,9 @@
  *
  *   npm run test:transform
  */
-import { aspectOf, naturalBox, resize, setBox, translate } from '../src/lib/transform'
+import {
+  aspectOf, canReset, naturalBox, normalizeBox, resize, setBox, translate,
+} from '../src/lib/transform'
 import type { Annotation, DrawAnn, ImageAsset, ShapeAnn } from '../src/types'
 
 let failures = 0
@@ -96,6 +98,34 @@ function inkFollowsItsBox() {
   check('setBox rescales strokes too', near(boxed.strokes[0][2].x, 50))
 }
 
+function flippedBoxes() {
+  // Dragging the SE corner far past the opposite side.
+  const flipped = resize(box(), 'se', -400, -300, false)
+  check('a box dragged inside out keeps a positive size',
+    flipped.w > 0 && flipped.h > 0, `${flipped.w} x ${flipped.h}`)
+  check('the flipped frame lands where the cursor left it',
+    near(flipped.x, -100) && near(flipped.y, -100) &&
+    near(flipped.x + flipped.w, 100) && near(flipped.y + flipped.h, 100),
+    `x=${flipped.x} y=${flipped.y} w=${flipped.w} h=${flipped.h}`)
+
+  const mirrored = resize(ink(), 'se', -200, 0, false) as DrawAnn
+  const xs = mirrored.strokes[0].map(p => p.x)
+  check('ink mirrors instead of collapsing when dragged through',
+    Math.min(...xs) >= mirrored.x - 0.01 &&
+    Math.max(...xs) <= mirrored.x + mirrored.w + 0.01,
+    `strokes ${Math.min(...xs)}..${Math.max(...xs)} vs frame ${mirrored.x}..${mirrored.x + mirrored.w}`)
+
+  const line = resize(
+    { ...box(), type: 'line', w: 100, h: 100 } as unknown as Annotation,
+    'p2', -300, -300, false,
+  )
+  check('a line keeps its sign, because there it means direction',
+    line.w < 0 && line.h < 0, `${line.w}, ${line.h}`)
+
+  check('normalizeBox leaves an upright box untouched',
+    normalizeBox(box()).x === 100 && normalizeBox(box()).w === 200)
+}
+
 function naturalSize() {
   const assets: Record<string, ImageAsset> = {
     img: { id: 'img', bytes: new Uint8Array(), mime: 'image/png', url: '', width: 800, height: 400 },
@@ -105,13 +135,22 @@ function naturalSize() {
     x: 0, y: 0, w: 300, h: 300, opacity: 1, locked: false,
   }
 
+  const remembered: Annotation = { ...distorted, initial: { w: 200, h: 100 } }
+  const back = naturalBox(remembered, assets)
+  check('reset returns to the size the object was inserted at',
+    !!back && near(back.w!, 200) && near(back.h!, 100), `${back?.w} x ${back?.h}`)
+  check('reset is offered while the size differs', canReset(remembered, assets))
+  check('reset is not offered once already at the initial size',
+    !canReset({ ...remembered, w: 200, h: 100 }, assets))
+
+  // Without a recorded initial size, fall back to the intrinsic one.
   const natural = naturalBox(distorted, assets)
-  check('reset restores the image proportions',
+  check('an image with no recorded size falls back to its own proportions',
     !!natural && near(natural.w!, 300) && near(natural.h!, 150),
     `${natural?.w} x ${natural?.h}`)
 
   const tightened = naturalBox(ink(), {})
-  check('reset tightens the ink frame around its strokes',
+  check('ink with no recorded size falls back to its stroke bounds',
     !!tightened && near(tightened.w!, 102) && near(tightened.h!, 52),
     `${tightened?.w} x ${tightened?.h}`)
 
@@ -122,6 +161,7 @@ function naturalSize() {
 sideHandles()
 lockedCorners()
 inkFollowsItsBox()
+flippedBoxes()
 naturalSize()
 
 console.log(failures ? `\n${failures} comprobación(es) fallida(s)` : '\nTodo correcto')

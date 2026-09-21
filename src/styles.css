@@ -196,12 +196,19 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .ann { cursor: move; }
 .ann.locked { cursor: default; }
-.handle { fill: #fff; stroke: var(--accent); stroke-width: 1.25; cursor: nwse-resize; }
+/* non-scaling-stroke keeps the outlines one pixel wide at any zoom level. */
+.handle {
+  fill: #fff; stroke: var(--accent); stroke-width: 1.25;
+  vector-effect: non-scaling-stroke; cursor: nwse-resize;
+}
 .handle.ne, .handle.sw { cursor: nesw-resize; }
 .handle.n, .handle.s { cursor: ns-resize; }
 .handle.e, .handle.w { cursor: ew-resize; }
 .handle.p1, .handle.p2 { cursor: move; }
-.outline { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 3; }
+.outline {
+  fill: none; stroke: var(--accent); stroke-width: 1;
+  stroke-dasharray: 4 3; vector-effect: non-scaling-stroke;
+}
 
 .text-edit {
   position: absolute;

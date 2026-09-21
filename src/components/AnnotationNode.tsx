@@ -1,6 +1,6 @@
 import { memo } from 'react'
-import type { Annotation, DrawAnn, ImageAnn, LineAnn, ShapeAnn, TextAnn } from '../types'
-import { strokeToPath } from '../lib/geometry'
+import type { Annotation, DrawAnn, ImageAnn, LineAnn, Rect, ShapeAnn, TextAnn } from '../types'
+import { normalizeRect, strokeToPath } from '../lib/geometry'
 import { FONTS, cssMeasure, layoutText, lineOffset } from '../lib/text'
 import { useEditor } from '../store'
 
@@ -85,21 +85,23 @@ function Picture({ a }: { a: ImageAnn }) {
   const url = useEditor(s => s.assets[a.assetId]?.url)
   if (!url) return null
   return (
-    <image href={url} x={a.x} y={a.y} width={Math.abs(a.w)} height={Math.abs(a.h)}
+    <image href={url} x={a.x} y={a.y} width={a.w} height={a.h}
       opacity={a.opacity} preserveAspectRatio="none" />
   )
 }
 
-function Body({ a }: { a: Annotation }) {
+function Body({ a, box }: { a: Annotation; box: Rect }) {
+  // Shapes, images and text are drawn from the normalised frame, so they can
+  // never drift away from the selection outline and its handles.
   switch (a.type) {
     case 'rect':
-    case 'ellipse': return <Shape a={a} />
+    case 'ellipse': return <Shape a={{ ...a, ...box }} />
+    case 'image': return <Picture a={{ ...a, ...box }} />
+    case 'text': return <TextBlock a={{ ...a, ...box }} />
     case 'line':
     case 'arrow': return <LineShape a={a} />
     case 'draw':
     case 'highlight': return <Ink a={a} />
-    case 'image': return <Picture a={a} />
-    case 'text': return <TextBlock a={a} />
   }
 }
 
@@ -107,12 +109,7 @@ function Body({ a }: { a: Annotation }) {
 export const AnnotationNode = memo(function AnnotationNode(
   { ann, selected, preview, onPointerDown, onDoubleClick }: Props,
 ) {
-  const box = {
-    x: Math.min(ann.x, ann.x + ann.w),
-    y: Math.min(ann.y, ann.y + ann.h),
-    w: Math.abs(ann.w),
-    h: Math.abs(ann.h),
-  }
+  const box = normalizeRect(ann)
   return (
     <g
       className={`ann${ann.locked ? ' locked' : ''}`}
@@ -123,7 +120,7 @@ export const AnnotationNode = memo(function AnnotationNode(
         <rect x={box.x - 4} y={box.y - 4} width={box.w + 8} height={box.h + 8}
           fill="transparent" pointerEvents="all" />
       )}
-      <Body a={ann} />
+      <Body a={ann} box={box} />
       {selected && <rect className="outline" x={box.x} y={box.y} width={box.w} height={box.h} pointerEvents="none" />}
     </g>
   )

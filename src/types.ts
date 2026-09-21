@@ -56,6 +56,8 @@ interface AnnBase {
   h: number
   opacity: number
   locked: boolean
+  /** Size at insertion time. The reset button in the size panel returns here. */
+  initial?: { w: number; h: number }
 }
 
 export interface TextAnn extends AnnBase {

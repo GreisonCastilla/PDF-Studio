@@ -204,11 +204,16 @@ probar la lógica sin navegador: `npm run test:transform`.
   Con el candado, manda el eje que más se ha desplazado, de forma que el objeto
   sigue al cursor en lugar de resistirse; y la esquina opuesta a la que se
   arrastra nunca se mueve.
-- `naturalBox` define a qué tamaño "quiere" volver cada objeto, que es lo que
-  restablece el botón del panel: las proporciones del archivo en una imagen, la
-  altura ajustada al contenido en un texto y el marco ceñido a los trazos en la
-  tinta. Las formas geométricas no tienen tamaño natural y devuelven `null`, por
-  lo que el botón aparece deshabilitado.
+- `normalizeBox` impide que un marco quede del revés. Arrastrar una esquina más
+  allá del lado opuesto deja el ancho o el alto en negativo, y entonces el marco,
+  los tiradores y el contenido dejan de coincidir sobre dónde está el objeto. Se
+  aplica **después** de `setBox`, porque mientras el signo sigue siendo negativo
+  es justo lo que hace que la tinta se refleje en lugar de encogerse. Las líneas
+  se quedan fuera: ahí el signo es la dirección, no un tamaño.
+- `naturalBox` define a dónde vuelve el botón de restablecer: el tamaño que el
+  objeto tenía al insertarse, que el store sella en `addAnnotation` para que
+  quede registrado venga de donde venga. El texto es la excepción —su altura
+  sigue al contenido—, así que recupera el ancho inicial y reajusta la altura.
 
 ## Inserción
 
@@ -216,3 +221,17 @@ probar la lógica sin navegador: `npm run test:transform`.
 la usan el botón de imagen, la firma subida y el pegado desde el portapapeles.
 Resuelve la página destino (la que se está mirando), calcula el tamaño inicial,
 cambia a la herramienta de selección y desplaza la vista hasta el resultado.
+
+## Tiradores de selección
+
+Los tiradores y el contorno de selección se dibujan en el espacio de la página,
+que está en puntos PDF, de modo que el zoom los agrandaría junto con todo lo
+demás: a 400 % un tirador de 9 pt ocupa 36 px y tapa los objetos pequeños.
+
+Se corrige por dos vías: el tamaño del tirador se divide por el zoom, para que
+mida siempre lo mismo en pantalla; y los trazos usan `vector-effect:
+non-scaling-stroke`, que los mantiene de un píxel sea cual sea la escala.
+
+Cuando un lado mide menos de 30 px en pantalla, su tirador central no se dibuja:
+no cabría sin solaparse con los de las esquinas, y un tirador que pisa a otro es
+peor que uno que falta.

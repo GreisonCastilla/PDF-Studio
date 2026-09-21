@@ -19,7 +19,11 @@ type Drag =
   | { kind: 'resize'; origin: Point; base: Annotation; handle: Handle }
   | { kind: 'crop'; origin: Point }
 
-const HANDLE_R = 4.5
+/** Half a handle, in screen pixels. Divided by the zoom so handles keep the same
+ *  physical size whatever the magnification. */
+const HANDLE_PX = 4.5
+/** Below this on-screen edge length there is no room for a mid-edge handle. */
+const SIDE_HANDLE_ROOM = 30
 
 /** The page shell under a viewport point, so objects can be dragged across pages. */
 function pageUnder(clientX: number, clientY: number): { id: string; rect: DOMRect } | null {
@@ -310,19 +314,28 @@ export function PageView({ item, index, scale }: Props) {
                   const b = normalizeRect(a)
                   const midX = b.x + b.w / 2
                   const midY = b.y + b.h / 2
-                  return [
+                  const corners: [Handle, number, number][] = [
                     ['nw', b.x, b.y], ['ne', b.x + b.w, b.y],
                     ['sw', b.x, b.y + b.h], ['se', b.x + b.w, b.y + b.h],
-                    ['n', midX, b.y], ['s', midX, b.y + b.h],
-                    ['w', b.x, midY], ['e', b.x + b.w, midY],
-                  ] as [Handle, number, number][]
+                  ]
+                  // On a small object the mid-edge handles would sit on top of the
+                  // corners, so they are left out until there is room for them.
+                  if (b.w * scale > SIDE_HANDLE_ROOM) {
+                    corners.push(['n', midX, b.y], ['s', midX, b.y + b.h])
+                  }
+                  if (b.h * scale > SIDE_HANDLE_ROOM) {
+                    corners.push(['w', b.x, midY], ['e', b.x + b.w, midY])
+                  }
+                  return corners
                 })()
+            const hr = HANDLE_PX / scale
             return pts.map(([h, cx, cy]) => (
               <rect
                 key={`${a.id}-${h}`}
                 className={`handle ${h}`}
-                x={cx - HANDLE_R} y={cy - HANDLE_R}
-                width={HANDLE_R * 2} height={HANDLE_R * 2}
+                x={cx - hr} y={cy - hr}
+                width={hr * 2} height={hr * 2}
+                rx={hr * 0.35}
                 onPointerDown={onHandleDown(a, h)}
               />
             ))

@@ -93,9 +93,14 @@ Ocho tiradores: los **laterales** cambian solo el ancho o solo el alto; las
 invierte el candado mientras arrastras.
 
 El panel **Tamaño y posición**, en la columna derecha, permite teclear las cifras
-exactas en puntos, activar o desactivar el candado de proporción y **restablecer**
-el objeto a su tamaño natural: sus proporciones originales en una imagen, la
-altura ajustada al contenido en un texto, y el marco ceñido al trazo en tinta.
+exactas en puntos, activar o desactivar el candado de proporción y
+**restablecer** el objeto al tamaño que tenía al insertarlo. En un cuadro de
+texto restablecer devuelve el ancho inicial y reajusta la altura al contenido,
+para no cortar el texto.
+
+Los tiradores conservan el mismo tamaño en pantalla a cualquier zoom, y los de
+los lados desaparecen cuando el objeto es demasiado pequeño para que quepan sin
+pisar a los de las esquinas.
 
 ### Páginas
 Reordenar arrastrando las miniaturas · girar ±90°/180° · duplicar · eliminar ·

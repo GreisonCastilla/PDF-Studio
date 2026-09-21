@@ -1,6 +1,6 @@
 import { useEditor } from '../store'
 import type { Annotation } from '../types'
-import { MIN_SIZE, aspectOf, naturalBox, setBox } from '../lib/transform'
+import { MIN_SIZE, aspectOf, canReset, naturalBox, setBox } from '../lib/transform'
 import { Link, Reset, Unlink } from './Icons'
 
 const round = (n: number) => Math.round(n * 10) / 10
@@ -27,6 +27,7 @@ export function SizePanel() {
   if (!ann) return null
 
   const natural = naturalBox(ann, assets)
+  const resettable = canReset(ann, assets)
   const isLine = ann.type === 'line' || ann.type === 'arrow'
 
   const setDimension = (axis: 'w' | 'h', raw: number) => {
@@ -58,10 +59,9 @@ export function SizePanel() {
     updateAnnotation(ann.id, setBox(ann, natural))
   }
 
-  const resetLabel =
-    ann.type === 'image' ? 'Restablecer proporción original de la imagen'
-    : ann.type === 'text' ? 'Ajustar la altura al contenido'
-    : 'Ajustar el marco al trazo'
+  const resetLabel = ann.type === 'text'
+    ? 'Volver al ancho inicial y ajustar la altura al contenido'
+    : 'Volver al tamaño que tenía al insertarlo'
 
   return (
     <div className="size-panel">
@@ -123,8 +123,12 @@ export function SizePanel() {
 
       <button
         className="btn size-reset"
-        disabled={!natural}
-        title={natural ? resetLabel : 'Esta forma no tiene un tamaño natural al que volver'}
+        disabled={!resettable}
+        title={
+          resettable ? resetLabel
+          : natural ? 'Ya está en su tamaño inicial'
+          : 'Este objeto no guarda un tamaño inicial al que volver'
+        }
         onClick={reset}
       >
         <Reset size={15} /> Restablecer
