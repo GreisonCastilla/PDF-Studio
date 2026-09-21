@@ -95,9 +95,15 @@ el pegado es el normal del navegador.
 
 ### Tamaño y posición
 
-Ocho tiradores: los **laterales** cambian solo el ancho o solo el alto; las
-**esquinas** mantienen la proporción mientras el candado esté activo. `Shift`
-invierte el candado mientras arrastras.
+Ocho tiradores, con dos reglas y ninguna tecla modificadora:
+
+- Las **esquinas mantienen siempre la proporción**. Nunca deforman.
+- Los **lados** son la forma de deformar, y el candado los gobierna: con el
+  candado puesto escalan las dos dimensiones y el objeto queda centrado en el eje
+  que no arrastras; con el candado quitado cambian solo su dimensión.
+
+Es decir: con el candado puesto nada puede aplastarse, que es lo que un candado
+debería significar.
 
 El panel **Tamaño y posición**, en la columna derecha, permite teclear las cifras
 exactas en puntos, activar o desactivar el candado de proporción y
@@ -127,7 +133,7 @@ en blanco) va a la página que estás mirando, y la vista salta hasta ella.
 ### Otros atajos
 `Ctrl+Z` deshacer · `Ctrl+Shift+Z` / `Ctrl+Y` rehacer · `Ctrl+V` pegar ·
 `Supr` borrar la selección · `Esc` deseleccionar · `Ctrl` + rueda para hacer zoom ·
-`Shift` invierte el candado de proporción al redimensionar.
+`Shift` fuerza cuadrado o línea recta **al dibujar** una forma nueva.
 
 ---
 

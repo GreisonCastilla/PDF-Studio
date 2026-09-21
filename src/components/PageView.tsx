@@ -259,7 +259,7 @@ export function PageView({ item, index, scale }: Props) {
     }
     updateAnnotation(
       d.base.id,
-      resize(d.base, d.handle, p.x - d.origin.x, p.y - d.origin.y, keepAspect !== e.shiftKey),
+      resize(d.base, d.handle, p.x - d.origin.x, p.y - d.origin.y, keepAspect),
     )
   }
 

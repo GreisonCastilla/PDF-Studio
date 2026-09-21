@@ -199,11 +199,18 @@ probar la lógica sin navegador: `npm run test:transform`.
 
 - `translate` y `setBox` arrastran consigo los puntos de la tinta, escalándolos
   con el marco. Sin eso, redimensionar una firma movería la caja pero no el trazo.
-- `resize` distingue tiradores de lado —que cambian una sola dimensión— de
-  tiradores de esquina, que respetan la proporción cuando el candado está puesto.
-  Con el candado, manda el eje que más se ha desplazado, de forma que el objeto
-  sigue al cursor en lugar de resistirse; y la esquina opuesta a la que se
-  arrastra nunca se mueve.
+- `resize` aplica dos reglas y ningún modificador. Las **esquinas mantienen
+  siempre la proporción**: manda el eje que más se ha desplazado, de forma que el
+  objeto sigue al cursor en lugar de resistirse, y la esquina opuesta a la que se
+  arrastra nunca se mueve. Los **lados** son lo único que deforma, y el candado
+  los gobierna; con el candado puesto escalan ambas dimensiones y centran el
+  objeto en el eje que no conducen.
+
+  La versión anterior era al revés —el candado afectaba a las esquinas y los
+  lados lo ignoraban— y era indefendible: un candado puesto que permite aplastar
+  el objeto no es un candado. Tampoco hay ya inversión con `Shift` al
+  redimensionar: un modificador escondido que cambia la regla es otra manera de
+  que el comportamiento no se corresponda con lo que el control promete.
 - `normalizeBox` impide que un marco quede del revés. Arrastrar una esquina más
   allá del lado opuesto deja el ancho o el alto en negativo, y entonces el marco,
   los tiradores y el contenido dejan de coincidir sobre dónde está el objeto. Se

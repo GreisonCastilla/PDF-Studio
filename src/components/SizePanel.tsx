@@ -83,8 +83,8 @@ export function SizePanel() {
         <button
           className={`chip lock${keepAspect ? ' on' : ''}`}
           title={keepAspect
-            ? 'Relación de aspecto bloqueada (Shift la invierte mientras arrastras)'
-            : 'Relación de aspecto libre'}
+            ? 'Proporción bloqueada: nada puede deformarse'
+            : 'Proporción libre: los tiradores de los lados deforman (las esquinas nunca)'}
           aria-pressed={keepAspect}
           onClick={() => setKeepAspect(!keepAspect)}
         >

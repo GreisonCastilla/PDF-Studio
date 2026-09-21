@@ -56,10 +56,17 @@ export function setBox(base: Annotation, box: Partial<Rect>): Annotation {
 /**
  * Applies a handle drag.
  *
- * Side handles change one dimension on their own; corner handles change both.
- * With the aspect lock on, corners keep the original proportion and the axis that
- * moved further decides the new size. The corner opposite the one being dragged
- * always stays put.
+ * Two rules, no modifier keys:
+ *
+ *  - **Corners always keep the proportion.** The axis that moved further decides
+ *    the new size, so the box follows the cursor, and the corner opposite the one
+ *    being dragged never moves.
+ *  - **Side handles are the only way to deform**, and the aspect lock governs
+ *    them: locked, they scale both dimensions and stay centred on the axis they
+ *    do not drive; unlocked, they change their own dimension alone.
+ *
+ * So with the lock on nothing can be squashed at all, which is what a lock ought
+ * to mean.
  */
 export function resize(
   base: Annotation, handle: Handle, dx: number, dy: number, keepAspect: boolean,
@@ -82,15 +89,27 @@ export function resize(
   if (bottom) { h = base.h + dy }
 
   const isCorner = (left || right) && (top || bottom)
-  if (isCorner && keepAspect && base.w !== 0 && base.h !== 0) {
+  const proportional = (isCorner || keepAspect) && base.w !== 0 && base.h !== 0
+
+  if (proportional) {
     const ratio = Math.abs(base.w) / Math.abs(base.h)
-    if (Math.abs(w) / ratio >= Math.abs(h)) {
-      h = Math.sign(h || base.h) * (Math.abs(w) / ratio)
+    if (isCorner) {
+      if (Math.abs(w) / ratio >= Math.abs(h)) {
+        h = Math.sign(h || base.h) * (Math.abs(w) / ratio)
+      } else {
+        w = Math.sign(w || base.w) * (Math.abs(h) * ratio)
+      }
+      // The opposite corner is the anchor.
+      if (left) x = base.x + base.w - w
+      if (top) y = base.y + base.h - h
+    } else if (left || right) {
+      // A horizontal handle drives the width; the height follows, centred.
+      h = Math.sign(base.h) * (Math.abs(w) / ratio)
+      y = base.y + (base.h - h) / 2
     } else {
-      w = Math.sign(w || base.w) * (Math.abs(h) * ratio)
+      w = Math.sign(base.w) * (Math.abs(h) * ratio)
+      x = base.x + (base.w - w) / 2
     }
-    if (left) x = base.x + base.w - w
-    if (top) y = base.y + base.h - h
   }
 
   if (Math.abs(w) < MIN_SIZE) w = Math.sign(w || 1) * MIN_SIZE

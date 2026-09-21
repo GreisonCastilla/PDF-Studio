@@ -34,24 +34,40 @@ const ink = (): DrawAnn => ({
   strokes: [[{ x: 0, y: 0 }, { x: 50, y: 25 }, { x: 100, y: 50 }]],
 })
 
-function sideHandles() {
-  const e = resize(box(), 'e', 40, 999, true)
-  check('handle E changes only the width', near(e.w, 240) && near(e.h, 100) && near(e.x, 100),
-    `${e.w} x ${e.h}`)
+function sideHandlesUnlocked() {
+  const e = resize(box(), 'e', 40, 999, false)
+  check('unlocked handle E changes only the width',
+    near(e.w, 240) && near(e.h, 100) && near(e.x, 100), `${e.w} x ${e.h}`)
 
-  const s = resize(box(), 's', 999, 30, true)
-  check('handle S changes only the height', near(s.h, 130) && near(s.w, 200), `${s.w} x ${s.h}`)
+  const s = resize(box(), 's', 999, 30, false)
+  check('unlocked handle S changes only the height',
+    near(s.h, 130) && near(s.w, 200), `${s.w} x ${s.h}`)
 
-  const w = resize(box(), 'w', 50, 0, true)
+  const w = resize(box(), 'w', 50, 0, false)
   check('handle W moves the left edge and keeps the right one',
     near(w.x, 150) && near(w.w, 150) && near(w.x + w.w, 300), `x=${w.x} w=${w.w}`)
 
-  const n = resize(box(), 'n', 0, 20, true)
+  const n = resize(box(), 'n', 0, 20, false)
   check('handle N moves the top edge and keeps the bottom one',
     near(n.y, 120) && near(n.h, 80) && near(n.y + n.h, 200), `y=${n.y} h=${n.h}`)
+}
 
-  check('side handles ignore the aspect lock',
-    near(resize(box(), 'e', 40, 0, true).h, 100))
+function sideHandlesLocked() {
+  // 200 x 100, ratio 2
+  const e = resize(box(), 'e', 100, 0, true)
+  check('locked handle E scales the height too',
+    near(e.w, 300) && near(e.h, 150) && near(aspectOf(e)!, 2), `${e.w} x ${e.h}`)
+  check('locked handle E keeps the box centred on the other axis',
+    near(e.y + e.h / 2, 150), `centre=${e.y + e.h / 2}`)
+
+  const s = resize(box(), 's', 0, 50, true)
+  check('locked handle S scales the width too',
+    near(s.h, 150) && near(s.w, 300) && near(aspectOf(s)!, 2), `${s.w} x ${s.h}`)
+  check('locked handle S keeps the left edge anchored to the centre',
+    near(s.x + s.w / 2, 200), `centre=${s.x + s.w / 2}`)
+
+  check('with the lock on nothing can be squashed',
+    near(aspectOf(resize(box(), 'w', 30, 0, true))!, 2))
 }
 
 function lockedCorners() {
@@ -68,22 +84,27 @@ function lockedCorners() {
     `right=${nw.x + nw.w} bottom=${nw.y + nw.h}`)
   check('locked NW corner keeps the ratio', near(aspectOf(nw)!, 2))
 
-  const free = resize(base, 'se', 100, 0, false)
-  check('unlocked corner distorts freely', near(free.w, 300) && near(free.h, 100),
-    `${free.w} x ${free.h}`)
+  // The lock governs the side handles; corners are proportional either way.
+  const unlocked = resize(base, 'se', 100, 0, false)
+  check('a corner keeps the proportion even with the lock off',
+    near(aspectOf(unlocked)!, 2) && near(unlocked.w, 300) && near(unlocked.h, 150),
+    `${unlocked.w} x ${unlocked.h}`)
+  check('every corner behaves the same way',
+    near(aspectOf(resize(base, 'ne', 100, 0, false))!, 2) &&
+    near(aspectOf(resize(base, 'sw', -100, 0, false))!, 2))
 
   // The axis that moved further wins, so the box follows the cursor.
   const tall = resize(base, 'se', 0, 200, true)
   check('locked corner follows the dominant axis',
     near(tall.h, 300) && near(tall.w, 600), `${tall.w} x ${tall.h}`)
 
-  const tiny = resize(box(), 'se', -500, -500, false)
+  const tiny = resize(box(), 'e', -500, 0, false)
   check('a box cannot be collapsed to nothing',
     Math.abs(tiny.w) >= 6 && Math.abs(tiny.h) >= 6, `${tiny.w} x ${tiny.h}`)
 }
 
 function inkFollowsItsBox() {
-  const scaled = resize(ink(), 'se', 100, 50, false) as DrawAnn
+  const scaled = resize(ink(), 'se', 100, 0, false) as DrawAnn
   const pts = scaled.strokes[0]
   check('ink scales with the box',
     near(pts[2].x, 200) && near(pts[2].y, 100), `${pts[2].x}, ${pts[2].y}`)
@@ -100,15 +121,16 @@ function inkFollowsItsBox() {
 
 function flippedBoxes() {
   // Dragging the SE corner far past the opposite side.
-  const flipped = resize(box(), 'se', -400, -300, false)
+  const flipped = resize(box(), 'se', -400, -200, false)
   check('a box dragged inside out keeps a positive size',
     flipped.w > 0 && flipped.h > 0, `${flipped.w} x ${flipped.h}`)
-  check('the flipped frame lands where the cursor left it',
-    near(flipped.x, -100) && near(flipped.y, -100) &&
+  check('the flipped frame still anchors on the opposite corner',
     near(flipped.x + flipped.w, 100) && near(flipped.y + flipped.h, 100),
-    `x=${flipped.x} y=${flipped.y} w=${flipped.w} h=${flipped.h}`)
+    `right=${flipped.x + flipped.w} bottom=${flipped.y + flipped.h}`)
+  check('and it keeps the proportion through the flip',
+    near(aspectOf(flipped)!, 2), `${flipped.w} x ${flipped.h}`)
 
-  const mirrored = resize(ink(), 'se', -200, 0, false) as DrawAnn
+  const mirrored = resize(ink(), 'e', -200, 0, false) as DrawAnn
   const xs = mirrored.strokes[0].map(p => p.x)
   check('ink mirrors instead of collapsing when dragged through',
     Math.min(...xs) >= mirrored.x - 0.01 &&
@@ -158,7 +180,8 @@ function naturalSize() {
   check('aspectOf rejects a degenerate box', aspectOf(box({ h: 0 })) === null)
 }
 
-sideHandles()
+sideHandlesUnlocked()
+sideHandlesLocked()
 lockedCorners()
 inkFollowsItsBox()
 flippedBoxes()
