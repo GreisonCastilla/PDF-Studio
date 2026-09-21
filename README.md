@@ -184,3 +184,34 @@ docker/                 Configuración de nginx para producción
 - El recorte ajusta el `CropBox`; el contenido fuera del recorte queda oculto,
   no destruido (comportamiento estándar de los editores de PDF).
 - Sin OCR ni compresión: son tareas de servidor (ver plan, fase 7).
+
+---
+
+## Licencia
+
+**[Prosperity Public License 3.0.0](LICENSE.md)** — libre para uso no comercial,
+con un periodo de prueba de treinta días para uso comercial.
+
+En corto:
+
+- Puedes usarlo, estudiarlo, modificarlo y compartirlo libremente sin fines
+  comerciales. El uso personal, los proyectos de aficionado, la docencia, la
+  investigación, las ONG y las administraciones públicas nunca cuentan como uso
+  comercial.
+- Para usarlo con fines comerciales dispones de **treinta días** de prueba. Una
+  empresa tiene un único periodo para toda su plantilla, no uno por persona.
+  Pasado ese plazo hace falta una licencia comercial del autor.
+- Si redistribuyes el proyecto, con o sin cambios, tienes que entregar también el
+  texto de la licencia y las líneas de contribuidor y código fuente que la
+  encabezan.
+- Contribuir mejoras de vuelta bajo una licencia pública estándar (MIT, Apache
+  2.0, BSD o Blue Oak) **no** cuenta como uso comercial.
+
+Ten en cuenta que esta licencia **no es de código abierto** según la definición
+de la OSI ni software libre según la FSF, porque restringe el campo de
+aplicación. Eso es deliberado, pero implica que algunos catálogos, distribuciones
+y políticas corporativas lo tratarán como software propietario.
+
+Las dependencias de terceros conservan sus propias licencias —todas permisivas:
+MIT, Apache-2.0, BSD, ISC y Zlib— y sus avisos se reproducen en
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
