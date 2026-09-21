@@ -10,6 +10,8 @@
   --danger: #dc2626;
   --shadow: 0 1px 2px rgba(16, 20, 40, .06), 0 8px 24px rgba(16, 20, 40, .08);
   --radius: 10px;
+  --scroll-thumb: #c4cad8;
+  --scroll-thumb-hover: #a6aec2;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,15 +25,37 @@
     --accent: #7b90ff;
     --accent-soft: #29304d;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+    --scroll-thumb: #3d4457;
+    --scroll-thumb-hover: #515a72;
   }
 }
 :root[data-theme="dark"] {
   --bg: #14161c; --chrome: #1c1f28; --chrome-2: #22262f; --border: #323744;
   --text: #e8eaf0; --muted: #9aa1b1; --accent: #7b90ff; --accent-soft: #29304d;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+  --scroll-thumb: #3d4457; --scroll-thumb-hover: #515a72;
 }
 
 * { box-sizing: border-box; }
+
+/* ---------- scrollbars, themed like the rest of the chrome ---------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+::-webkit-scrollbar { width: 13px; height: 13px; }
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 999px;
+  /* A transparent border plus content-box clipping leaves breathing room
+     around the thumb without needing a separate track colour. */
+  border: 3.5px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--scroll-thumb-hover); }
+::-webkit-scrollbar-thumb:active { background-color: var(--accent); }
 
 html, body, #root { height: 100%; margin: 0; }
 
@@ -156,6 +180,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   gap: 24px;
 }
 .page-wrap { position: relative; }
+.page-wrap.raised { z-index: 20; }
 .page-shell {
   position: relative;
   box-shadow: var(--shadow);
@@ -262,11 +287,11 @@ input[type="color"] {
 
 /* ---------- selected-text panel ---------- */
 .text-panel {
-  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
   background: var(--chrome-2);
   flex: 0 0 auto;
 }
-.text-panel .panel-head { border-bottom: 0; padding-bottom: 0; }
+.text-panel .panel-head { border-bottom: 0; padding-bottom: 2px; }
 .text-panel-area {
   height: 116px;
   padding: 8px;

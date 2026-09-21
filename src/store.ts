@@ -31,6 +31,7 @@ interface Editor extends DocState {
   selectedPageIds: string[]
   activePageId: string | null
   cropTarget: string | null
+  draggingAnnId: string | null
   busy: string | null
   past: Snapshot[]
   future: Snapshot[]
@@ -71,6 +72,7 @@ interface Editor extends DocState {
   setActivePage(id: string | null): void
   setZoom(z: number, fit?: boolean): void
   setCropTarget(id: string | null): void
+  setDragging(id: string | null): void
 }
 
 const initial = {
@@ -83,6 +85,7 @@ const initial = {
   selectedPageIds: [] as string[],
   activePageId: null as string | null,
   cropTarget: null as string | null,
+  draggingAnnId: null as string | null,
   past: [] as Snapshot[],
   future: [] as Snapshot[],
 }
@@ -329,6 +332,7 @@ export const useEditor = create<Editor>()((set, get) => ({
   setActivePage: id => set({ activePageId: id }),
   setZoom: (z, fit = false) => set({ zoom: Math.min(6, Math.max(0.15, z)), fitWidth: fit }),
   setCropTarget: id => set({ cropTarget: id, tool: id ? 'crop' : 'select' }),
+  setDragging: id => set({ draggingAnnId: id }),
 }))
 
 export const canUndo = (s: Editor) => s.past.length > 0

@@ -166,3 +166,26 @@ que el botón no hace nada.
 Un `IntersectionObserver` sobre el contenedor del lienzo mantiene como activa la
 página **más visible**, y tras insertar algo la vista se desplaza hasta ella para
 confirmar visualmente lo ocurrido.
+
+### Arrastrar objetos entre páginas
+
+Cada anotación pertenece a una página y se pinta dentro del `<svg>` de esa página.
+Al arrastrarla más allá del borde no se recortaba —el overlay tiene `overflow:
+visible`— pero quedaba *debajo* de la página siguiente, porque esa página aparece
+después en el documento y tiene fondo blanco opaco.
+
+La solución es doble:
+
+1. **Reasignación real de página.** Durante el arrastre se localiza, en
+   coordenadas de viewport, sobre qué `.page-shell` está el cursor, y el objeto
+   cambia de `pageId` con sus coordenadas recalculadas en el espacio display de la
+   página de destino. Se compara con los rectángulos de las páginas en lugar de
+   usar `elementFromPoint`, porque ese devolvería el propio objeto arrastrado —que
+   pertenece al SVG de origen— y el traspaso nunca llegaría a ocurrir.
+2. **Apilado.** Mientras dura el gesto, la página que contiene el objeto recibe un
+   `z-index` alto, de modo que al cruzar el hueco entre dos páginas el objeto pasa
+   por encima y no por debajo.
+
+El desplazamiento se calcula siempre contra la anotación tal como estaba al
+empezar el gesto, nunca contra la última posición, para que el arrastre no acumule
+error de coma flotante.

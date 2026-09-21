@@ -16,11 +16,30 @@ type Handle = 'nw' | 'ne' | 'sw' | 'se' | 'p1' | 'p2'
 type Drag =
   | { kind: 'create'; ann: Annotation; origin: Point }
   | { kind: 'ink'; ann: DrawAnn }
-  | { kind: 'move'; origin: Point; base: Annotation }
+  | { kind: 'move'; grab: Point; base: Annotation }
   | { kind: 'resize'; origin: Point; base: Annotation; handle: Handle }
   | { kind: 'crop'; origin: Point }
 
 const HANDLE_R = 4.5
+
+/** The page shell under a viewport point, so objects can be dragged across pages. */
+function pageUnder(clientX: number, clientY: number): { id: string; rect: DOMRect } | null {
+  for (const el of document.querySelectorAll<HTMLElement>('[data-shell]')) {
+    const rect = el.getBoundingClientRect()
+    if (clientX >= rect.left && clientX <= rect.right &&
+        clientY >= rect.top && clientY <= rect.bottom) {
+      return { id: el.dataset.shell!, rect }
+    }
+  }
+  return null
+}
+
+/** Falls back to the page the object currently belongs to, so it keeps following
+ *  the cursor while crossing the gap between two pages. */
+function shellRectOf(pageId: string): DOMRect | null {
+  const el = document.querySelector<HTMLElement>(`[data-shell="${pageId}"]`)
+  return el ? el.getBoundingClientRect() : null
+}
 
 function translate(a: Annotation, dx: number, dy: number): Annotation {
   const moved = { ...a, x: a.x + dx, y: a.y + dy }
@@ -74,6 +93,11 @@ export function PageView({ item, index, scale }: Props) {
   const tool = useEditor(s => s.tool)
   const style = useEditor(s => s.style)
   const cropping = useEditor(s => s.cropTarget === item.id)
+  const draggingAnnId = useEditor(s => s.draggingAnnId)
+
+  // The page holding the dragged object floats above its neighbours, otherwise it
+  // slides underneath the next page while crossing the gap between the two.
+  const raised = !!draggingAnnId && pageAnns.some(a => a.id === draggingAnnId)
 
   const addAnnotation = useEditor(s => s.addAnnotation)
   const updateAnnotation = useEditor(s => s.updateAnnotation)
@@ -82,6 +106,7 @@ export function PageView({ item, index, scale }: Props) {
   const setCrop = useEditor(s => s.setCrop)
   const setCropTarget = useEditor(s => s.setCropTarget)
   const setTool = useEditor(s => s.setTool)
+  const setDragging = useEditor(s => s.setDragging)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -160,7 +185,9 @@ export function PageView({ item, index, scale }: Props) {
     svgRef.current?.setPointerCapture(e.pointerId)
     select([ann.id])
     pushHistory()
-    dragRef.current = { kind: 'move', origin: toPt(e), base: ann }
+    const p = toPt(e)
+    setDragging(ann.id)
+    dragRef.current = { kind: 'move', grab: { x: p.x - ann.x, y: p.y - ann.y }, base: ann }
   }
 
   const onHandleDown = (ann: Annotation, handle: Handle) => (e: React.PointerEvent) => {
@@ -202,19 +229,29 @@ export function PageView({ item, index, scale }: Props) {
       setDraft(d.ann)
       return
     }
-    const dx = p.x - d.origin.x
-    const dy = p.y - d.origin.y
     if (d.kind === 'move') {
-      updateAnnotation(d.base.id, translate(d.base, dx, dy))
-    } else {
-      updateAnnotation(d.base.id, resize(d.base, d.handle, dx, dy))
+      // Hit-test in viewport space: the pointer may well be over a different page
+      // than the one that captured the gesture.
+      const hit = pageUnder(e.clientX, e.clientY)
+      const live = useEditor.getState().annotations.find(a => a.id === d.base.id)
+      const rect = hit?.rect ?? (live ? shellRectOf(live.pageId) : null)
+      if (!rect) return
+      const target = hit?.id ?? live?.pageId ?? d.base.pageId
+      const nx = (e.clientX - rect.left) / scale - d.grab.x
+      const ny = (e.clientY - rect.top) / scale - d.grab.y
+      // Offsets come off `base`, never off the live object, so the drag cannot drift.
+      const moved = translate(d.base, nx - d.base.x, ny - d.base.y)
+      updateAnnotation(d.base.id, { ...moved, pageId: target })
+      return
     }
+    updateAnnotation(d.base.id, resize(d.base, d.handle, p.x - d.origin.x, p.y - d.origin.y))
   }
 
   const onUp = (e: React.PointerEvent) => {
     const d = dragRef.current
     dragRef.current = null
     svgRef.current?.releasePointerCapture(e.pointerId)
+    setDragging(null)
     if (!d) return
 
     if (d.kind === 'crop') {
@@ -263,10 +300,11 @@ export function PageView({ item, index, scale }: Props) {
   const selectedHere = pageAnns.filter(a => selectedAnnIds.includes(a.id))
 
   return (
-    <div className="page-wrap" data-page={item.id}>
+    <div className={`page-wrap${raised ? ' raised' : ''}`} data-page={item.id}>
       <div className="page-label">Página {index + 1}{item.crop ? ' · recortada' : ''}</div>
       <div
         className="page-shell"
+        data-shell={item.id}
         style={{ width: size.w * scale, height: size.h * scale }}
       >
         <canvas ref={canvasRef} />

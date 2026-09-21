@@ -73,9 +73,12 @@ npm run dev        # http://localhost:5173
 | Recortar | `C` | Ajusta el *CropBox* de la página |
 
 El texto se escribe directamente sobre la página (doble clic para reabrir un
-cuadro existente) **o** desde el panel **Texto seleccionado**, abajo a la
-izquierda, que muestra el contenido del cuadro activo y permite editarlo con
-más sitio. Los dos editores están sincronizados en vivo.
+cuadro existente) **o** desde el panel **Texto seleccionado**, arriba del todo en
+la columna derecha, que muestra el contenido del cuadro activo y permite editarlo
+con más sitio. Los dos editores están sincronizados en vivo.
+
+Cualquier objeto —texto, imagen, firma, forma— se puede **arrastrar de una página
+a otra**: se reasigna a la página sobre la que lo sueltes.
 
 ### Páginas
 Reordenar arrastrando las miniaturas · girar ±90°/180° · duplicar · eliminar ·

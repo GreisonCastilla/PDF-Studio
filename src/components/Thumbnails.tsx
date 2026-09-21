@@ -4,7 +4,6 @@ import type { PageItem } from '../types'
 import { renderPage } from '../lib/pdfjs'
 import { displaySize } from '../lib/geometry'
 import { Copy, CropIcon, Plus, RotateCw, Trash } from './Icons'
-import { TextPanel } from './TextPanel'
 import { scrollToPage } from '../lib/scroll'
 
 const THUMB_W = 150
@@ -87,7 +86,6 @@ export function Thumbnails() {
       <div className="panel-body">
         {pages.map((p, i) => <Thumb key={p.id} item={p} index={i} />)}
       </div>
-      <TextPanel />
     </aside>
   )
 }
