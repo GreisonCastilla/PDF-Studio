@@ -25,8 +25,13 @@ export const FONTS: Record<FontKey, { label: string; css: string; asc: number; d
 export type Measure = (text: string) => number
 
 let ctx: CanvasRenderingContext2D | null = null
-/** Browser-side text measurement used by the on-screen preview. */
+/**
+ * Browser-side text measurement used by the on-screen preview. Falls back to a
+ * rough estimate where there is no DOM, so this module stays importable from
+ * the headless tests.
+ */
 export function cssMeasure(ann: TextAnn): Measure {
+  if (typeof document === 'undefined') return t => t.length * ann.fontSize * 0.5
   ctx ??= document.createElement('canvas').getContext('2d')
   const f = FONTS[ann.font]
   const style = `${ann.italic ? 'italic ' : ''}${ann.bold ? 'bold ' : ''}${ann.fontSize}px ${f.css}`
@@ -87,8 +92,10 @@ export function lineOffset(ann: TextAnn, width: number): number {
   return 0
 }
 
-export function textHeight(ann: TextAnn, lineCount: number): number {
-  return Math.max(ann.fontSize * ann.lineHeight, lineCount * ann.fontSize * ann.lineHeight)
+/** Height that exactly fits the wrapped text, in display points. */
+export function fittedHeight(ann: TextAnn): number {
+  const lines = layoutText(ann, cssMeasure(ann)).lines.length
+  return Math.max(ann.fontSize * ann.lineHeight, lines * ann.fontSize * ann.lineHeight)
 }
 
 const REPLACEMENTS: Record<string, string> = {

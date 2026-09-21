@@ -2,6 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useEditor } from './store'
 import type { Tool } from './types'
 import { displaySize } from './lib/geometry'
+import { fileToAsset } from './lib/images'
+import { insertImage, insertText } from './lib/insert'
 import { Toolbar } from './components/Toolbar'
 import { Thumbnails } from './components/Thumbnails'
 import { Inspector } from './components/Inspector'
@@ -93,6 +95,39 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedAnnIds, deleteAnnotations, undo, redo, setTool])
+
+  // Paste an image or a block of text straight onto the page in view.
+  useEffect(() => {
+    const onPaste = async (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement | null
+      // Inside a field, let the browser do its normal thing.
+      if (target?.matches?.('input, textarea, select')) return
+      if (!useEditor.getState().pages.length) return
+
+      const data = e.clipboardData
+      if (!data) return
+
+      const imageItem = Array.from(data.items ?? []).find(i => i.type.startsWith('image/'))
+      if (imageItem) {
+        const file = imageItem.getAsFile()
+        if (file) {
+          e.preventDefault()
+          const asset = await fileToAsset(file)
+          useEditor.getState().addAsset(asset)
+          insertImage(asset)
+          return
+        }
+      }
+
+      const text = data.getData('text/plain')
+      if (text.trim()) {
+        e.preventDefault()
+        insertText(text.replace(/\r\n/g, '\n').trimEnd())
+      }
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [])
 
   // Ctrl + wheel zooms, like every other document editor.
   useEffect(() => {

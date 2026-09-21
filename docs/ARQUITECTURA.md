@@ -189,3 +189,30 @@ La solución es doble:
 El desplazamiento se calcula siempre contra la anotación tal como estaba al
 empezar el gesto, nunca contra la última posición, para que el arrastre no acumule
 error de coma flotante.
+
+## Transformaciones
+
+`src/lib/transform.ts` concentra todo lo que mueve o cambia de tamaño un objeto,
+y lo usan por igual el arrastre en el lienzo y las casillas numéricas del panel
+derecho. Tener un solo sitio evita que las dos vías se desincronicen, y permite
+probar la lógica sin navegador: `npm run test:transform`.
+
+- `translate` y `setBox` arrastran consigo los puntos de la tinta, escalándolos
+  con el marco. Sin eso, redimensionar una firma movería la caja pero no el trazo.
+- `resize` distingue tiradores de lado —que cambian una sola dimensión— de
+  tiradores de esquina, que respetan la proporción cuando el candado está puesto.
+  Con el candado, manda el eje que más se ha desplazado, de forma que el objeto
+  sigue al cursor en lugar de resistirse; y la esquina opuesta a la que se
+  arrastra nunca se mueve.
+- `naturalBox` define a qué tamaño "quiere" volver cada objeto, que es lo que
+  restablece el botón del panel: las proporciones del archivo en una imagen, la
+  altura ajustada al contenido en un texto y el marco ceñido a los trazos en la
+  tinta. Las formas geométricas no tienen tamaño natural y devuelven `null`, por
+  lo que el botón aparece deshabilitado.
+
+## Inserción
+
+`src/lib/insert.ts` es la única puerta de entrada para poner algo en una página:
+la usan el botón de imagen, la firma subida y el pegado desde el portapapeles.
+Resuelve la página destino (la que se está mirando), calcula el tamaño inicial,
+cambia a la herramienta de selección y desplaza la vista hasta el resultado.

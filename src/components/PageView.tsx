@@ -6,12 +6,11 @@ import { renderPage } from '../lib/pdfjs'
 import {
   displayRectToBase, displaySize, normalizeRect, pointsBounds, simplify, uid,
 } from '../lib/geometry'
-import { FONTS, cssMeasure, layoutText } from '../lib/text'
+import { FONTS, fittedHeight } from '../lib/text'
+import { type Handle, resize, translate } from '../lib/transform'
 import { AnnotationNode } from './AnnotationNode'
 
 interface Props { item: PageItem; index: number; scale: number }
-
-type Handle = 'nw' | 'ne' | 'sw' | 'se' | 'p1' | 'p2'
 
 type Drag =
   | { kind: 'create'; ann: Annotation; origin: Point }
@@ -41,41 +40,6 @@ function shellRectOf(pageId: string): DOMRect | null {
   return el ? el.getBoundingClientRect() : null
 }
 
-function translate(a: Annotation, dx: number, dy: number): Annotation {
-  const moved = { ...a, x: a.x + dx, y: a.y + dy }
-  if (moved.type === 'draw' || moved.type === 'highlight') {
-    moved.strokes = (a as DrawAnn).strokes.map(s => s.map(p => ({ x: p.x + dx, y: p.y + dy })))
-  }
-  return moved as Annotation
-}
-
-/** Applies a corner/endpoint drag, scaling ink points along with the box. */
-function resize(base: Annotation, handle: Handle, dx: number, dy: number): Annotation {
-  if ((base.type === 'line' || base.type === 'arrow') && (handle === 'p1' || handle === 'p2')) {
-    return handle === 'p1'
-      ? { ...base, x: base.x + dx, y: base.y + dy, w: base.w - dx, h: base.h - dy }
-      : { ...base, w: base.w + dx, h: base.h + dy }
-  }
-  const left = handle === 'nw' || handle === 'sw'
-  const top = handle === 'nw' || handle === 'ne'
-  let { x, y, w, h } = base
-  if (left) { x += dx; w -= dx } else { w += dx }
-  if (top) { y += dy; h -= dy } else { h += dy }
-  const min = 6
-  if (Math.abs(w) < min) w = Math.sign(w || 1) * min
-  if (Math.abs(h) < min) h = Math.sign(h || 1) * min
-
-  const next = { ...base, x, y, w, h } as Annotation
-  if (base.type === 'draw' || base.type === 'highlight') {
-    const sx = base.w === 0 ? 1 : w / base.w
-    const sy = base.h === 0 ? 1 : h / base.h
-    ;(next as DrawAnn).strokes = (base as DrawAnn).strokes.map(s =>
-      s.map(p => ({ x: x + (p.x - base.x) * sx, y: y + (p.y - base.y) * sy })),
-    )
-  }
-  return next
-}
-
 export function PageView({ item, index, scale }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -94,6 +58,7 @@ export function PageView({ item, index, scale }: Props) {
   const style = useEditor(s => s.style)
   const cropping = useEditor(s => s.cropTarget === item.id)
   const draggingAnnId = useEditor(s => s.draggingAnnId)
+  const keepAspect = useEditor(s => s.keepAspect)
 
   // The page holding the dragged object floats above its neighbours, otherwise it
   // slides underneath the next page while crossing the gap between the two.
@@ -244,7 +209,10 @@ export function PageView({ item, index, scale }: Props) {
       updateAnnotation(d.base.id, { ...moved, pageId: target })
       return
     }
-    updateAnnotation(d.base.id, resize(d.base, d.handle, p.x - d.origin.x, p.y - d.origin.y))
+    updateAnnotation(
+      d.base.id,
+      resize(d.base, d.handle, p.x - d.origin.x, p.y - d.origin.y, keepAspect !== e.shiftKey),
+    )
   }
 
   const onUp = (e: React.PointerEvent) => {
@@ -340,9 +308,13 @@ export function PageView({ item, index, scale }: Props) {
               ? [['p1', a.x, a.y], ['p2', a.x + a.w, a.y + a.h]]
               : (() => {
                   const b = normalizeRect(a)
+                  const midX = b.x + b.w / 2
+                  const midY = b.y + b.h / 2
                   return [
                     ['nw', b.x, b.y], ['ne', b.x + b.w, b.y],
                     ['sw', b.x, b.y + b.h], ['se', b.x + b.w, b.y + b.h],
+                    ['n', midX, b.y], ['s', midX, b.y + b.h],
+                    ['w', b.x, midY], ['e', b.x + b.w, midY],
                   ] as [Handle, number, number][]
                 })()
             return pts.map(([h, cx, cy]) => (
@@ -418,8 +390,7 @@ function TextEditor({
   }, [])
 
   const commit = (text: string) => {
-    const lines = layoutText({ ...ann, text }, cssMeasure({ ...ann, text })).lines.length
-    onChange({ text, h: Math.max(ann.fontSize * ann.lineHeight, lines * ann.fontSize * ann.lineHeight) })
+    onChange({ text, h: fittedHeight({ ...ann, text }) })
   }
 
   return (

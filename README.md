@@ -51,7 +51,9 @@ npm run dev        # http://localhost:5173
 | `npm run build` | Chequeo de tipos + bundle de producción en `dist/` |
 | `npm run preview` | Sirve el bundle ya construido |
 | `npm run typecheck` | Solo TypeScript |
-| `npm run test:export` | Pruebas headless del exportador y de la geometría |
+| `npm test` | Todas las pruebas headless |
+| `npm run test:export` | Pruebas del exportador y de la geometría |
+| `npm run test:transform` | Pruebas del redimensionado y la relación de aspecto |
 
 ---
 
@@ -80,6 +82,21 @@ con más sitio. Los dos editores están sincronizados en vivo.
 Cualquier objeto —texto, imagen, firma, forma— se puede **arrastrar de una página
 a otra**: se reasigna a la página sobre la que lo sueltes.
 
+**Pegar desde el portapapeles** (`Ctrl+V`) funciona con imágenes y con texto: lo
+que pegues aterriza en la página que estés mirando. Dentro de un campo de texto
+el pegado es el normal del navegador.
+
+### Tamaño y posición
+
+Ocho tiradores: los **laterales** cambian solo el ancho o solo el alto; las
+**esquinas** mantienen la proporción mientras el candado esté activo. `Shift`
+invierte el candado mientras arrastras.
+
+El panel **Tamaño y posición**, en la columna derecha, permite teclear las cifras
+exactas en puntos, activar o desactivar el candado de proporción y **restablecer**
+el objeto a su tamaño natural: sus proporciones originales en una imagen, la
+altura ajustada al contenido en un texto, y el marco ceñido al trazo en tinta.
+
 ### Páginas
 Reordenar arrastrando las miniaturas · girar ±90°/180° · duplicar · eliminar ·
 insertar página en blanco · añadir otro PDF (unir) · **Extraer** las páginas
@@ -89,8 +106,9 @@ La página activa sigue al desplazamiento: lo que insertes (imagen, firma, pági
 en blanco) va a la página que estás mirando, y la vista salta hasta ella.
 
 ### Otros atajos
-`Ctrl+Z` deshacer · `Ctrl+Shift+Z` / `Ctrl+Y` rehacer · `Supr` borrar la selección ·
-`Esc` deseleccionar · `Ctrl` + rueda para hacer zoom.
+`Ctrl+Z` deshacer · `Ctrl+Shift+Z` / `Ctrl+Y` rehacer · `Ctrl+V` pegar ·
+`Supr` borrar la selección · `Esc` deseleccionar · `Ctrl` + rueda para hacer zoom ·
+`Shift` invierte el candado de proporción al redimensionar.
 
 ---
 
@@ -103,6 +121,8 @@ src/
   lib/
     geometry.ts         Conversión de coordenadas, rotación, recorte, suavizado
     text.ts             Métricas y maquetación de texto compartidas
+    transform.ts        Mover, redimensionar y tamaño natural de los objetos
+    insert.ts           Inserción de imágenes y texto en la página activa
     pdfjs.ts            Carga y pintado de páginas con pdf.js
     export.ts           Generación del PDF final con pdf-lib
     images.ts           Importación y normalización de imágenes
@@ -113,6 +133,7 @@ src/
     AnnotationNode.tsx  Pintado de cada tipo de anotación
     Inspector.tsx       Propiedades de la selección
     TextPanel.tsx       Contenido del cuadro de texto seleccionado
+    SizePanel.tsx       Tamaño, posición y relación de aspecto
     SignaturePad.tsx    Captura de firma
 docs/                   Plan, arquitectura y decisiones técnicas
 scripts/                Pruebas headless

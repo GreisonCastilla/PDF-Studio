@@ -3,8 +3,7 @@ import { canRedo, canUndo, useEditor } from '../store'
 import type { Tool } from '../types'
 import { buildPdf, download } from '../lib/export'
 import { fileToAsset } from '../lib/images'
-import { displaySize, uid } from '../lib/geometry'
-import { scrollToPage } from '../lib/scroll'
+import { insertImage } from '../lib/insert'
 import {
   ArrowIcon, Circle, CropIcon, Cursor, Download, FilePlus, ImageIcon, LineIcon,
   Marker, Moon, Pen, RotateCcw, RotateCw, Scissors, SignIcon, Square, Sun,
@@ -26,7 +25,7 @@ export function Toolbar({ onSign }: { onSign: () => void }) {
   const store = useEditor()
   const {
     tool, setTool, pages, selectedPageIds, activePageId, zoom, setZoom,
-    undo, redo, importFiles, addAsset, addAnnotation, style, docName,
+    undo, redo, importFiles, addAsset, docName,
     rotatePages, deletePages, setCropTarget, setBusy, insertBlankPage,
   } = store
   const imageInput = useRef<HTMLInputElement>(null)
@@ -43,18 +42,7 @@ export function Toolbar({ onSign }: { onSign: () => void }) {
     if (!file) return
     const asset = await fileToAsset(file)
     addAsset(asset)
-    const page = pages.find(p => p.id === activePageId) ?? pages[0]
-    if (!page) return
-    const size = displaySize(page)
-    const w = Math.min(size.w * 0.6, asset.width * 0.75)
-    const h = (asset.height / asset.width) * w
-    addAnnotation({
-      id: uid('an'), pageId: page.id, type: 'image', assetId: asset.id,
-      x: (size.w - w) / 2, y: (size.h - h) / 2, w, h,
-      opacity: style.opacity, locked: false,
-    })
-    setTool('select')          // so it can be dragged straight away
-    scrollToPage(page.id)
+    insertImage(asset)
   }
 
   const save = async (only?: string[]) => {

@@ -27,6 +27,7 @@ interface Editor extends DocState {
   style: Style
   zoom: number
   fitWidth: boolean
+  keepAspect: boolean
   selectedAnnIds: string[]
   selectedPageIds: string[]
   activePageId: string | null
@@ -71,6 +72,7 @@ interface Editor extends DocState {
   selectPages(ids: string[]): void
   setActivePage(id: string | null): void
   setZoom(z: number, fit?: boolean): void
+  setKeepAspect(v: boolean): void
   setCropTarget(id: string | null): void
   setDragging(id: string | null): void
 }
@@ -95,6 +97,7 @@ export const useEditor = create<Editor>()((set, get) => ({
   tool: 'select',
   zoom: 1,
   fitWidth: true,
+  keepAspect: true,
   busy: null,
   style: {
     stroke: '#e11d48',
@@ -331,6 +334,7 @@ export const useEditor = create<Editor>()((set, get) => ({
   selectPages: ids => set({ selectedPageIds: ids }),
   setActivePage: id => set({ activePageId: id }),
   setZoom: (z, fit = false) => set({ zoom: Math.min(6, Math.max(0.15, z)), fitWidth: fit }),
+  setKeepAspect: v => set({ keepAspect: v }),
   setCropTarget: id => set({ cropTarget: id, tool: id ? 'crop' : 'select' }),
   setDragging: id => set({ draggingAnnId: id }),
 }))

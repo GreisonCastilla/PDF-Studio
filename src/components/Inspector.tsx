@@ -3,6 +3,7 @@ import type { Annotation, DrawAnn, FontKey, ShapeAnn, TextAnn } from '../types'
 import { FONTS } from '../lib/text'
 import { Back, Copy, Front, Lock, Trash } from './Icons'
 import { TextPanel } from './TextPanel'
+import { SizePanel } from './SizePanel'
 
 const has = (a: Annotation | undefined, ...kinds: Annotation['type'][]) =>
   !!a && kinds.includes(a.type)
@@ -35,6 +36,7 @@ export function Inspector() {
   return (
     <aside className="panel panel-right">
       <TextPanel />
+      <SizePanel />
       <div className="panel-head">
         <span>{sel.length ? `Selección · ${sel.length}` : 'Estilo por defecto'}</span>
       </div>

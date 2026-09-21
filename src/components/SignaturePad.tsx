@@ -4,6 +4,7 @@ import type { DrawAnn, Point } from '../types'
 import { displaySize, pointsBounds, simplify, strokeToPath, uid } from '../lib/geometry'
 import { fileToAsset } from '../lib/images'
 import { scrollToPage } from '../lib/scroll'
+import { insertImage } from '../lib/insert'
 
 const STORE_KEY = 'pdf-studio.signatures'
 const TARGET_WIDTH = 180 // points on the page
@@ -29,7 +30,7 @@ export function SignaturePad({ onClose }: { onClose: () => void }) {
   const [saved, setSaved] = useState<Saved[]>(loadSaved)
   const [empty, setEmpty] = useState(true)
 
-  const { pages, activePageId, addAnnotation, addAsset, style } = useEditor()
+  const { pages, activePageId, addAnnotation, addAsset } = useEditor()
 
   const repaint = () => {
     const canvas = canvasRef.current
@@ -101,17 +102,7 @@ export function SignaturePad({ onClose }: { onClose: () => void }) {
     if (!file) return
     const asset = await fileToAsset(file)
     addAsset(asset)
-    const page = pages.find(p => p.id === activePageId) ?? pages[0]
-    if (!page) return
-    const size = displaySize(page)
-    const w = Math.min(TARGET_WIDTH, size.w * 0.5)
-    const h = (asset.height / asset.width) * w
-    addAnnotation({
-      id: uid('an'), pageId: page.id, type: 'image', assetId: asset.id,
-      x: (size.w - w) / 2, y: size.h - h - 72, w, h,
-      opacity: style.opacity, locked: false,
-    })
-    scrollToPage(page.id)
+    insertImage(asset, { widthRatio: 0.5, maxWidth: TARGET_WIDTH, anchor: 'signature' })
     onClose()
   }
 
