@@ -31,5 +31,5 @@
     "vite": "^8.3.0",
     "vite-node": "^6.0.0"
   },
-  "license": "SEE LICENSE IN LICENSE.md"
+  "license": "MIT"
 }

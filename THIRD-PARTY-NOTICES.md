@@ -1,10 +1,10 @@
 # Avisos de terceros
 
-PDF Studio se distribuye bajo la **Prosperity Public License 3.0.0**
-(ver `LICENSE.md`). Incorpora además los componentes de terceros que se listan
-abajo, cada uno bajo su propia licencia, todas permisivas. Sus avisos de
-copyright se reproducen íntegros, como exigen esas licencias al redistribuir el
-código: empaquetar la aplicación los borraría, así que se recogen aquí.
+PDF Studio se distribuye bajo la licencia **MIT** (ver `LICENSE`). Incorpora
+además los componentes de terceros que se listan abajo, cada uno bajo su propia
+licencia, todas permisivas y compatibles. Sus avisos de copyright se reproducen
+íntegros, como exigen esas licencias al redistribuir el código: empaquetar la
+aplicación los borraría, así que se recogen aquí.
 
 Generado desde las dependencias instaladas el 2026-09-21 con `npm run notices`.
 Si cambian las dependencias, vuelve a ejecutarlo.
