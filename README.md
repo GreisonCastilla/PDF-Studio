@@ -109,6 +109,13 @@ Los tiradores conservan el mismo tamaño en pantalla a cualquier zoom, y los de
 los lados desaparecen cuando el objeto es demasiado pequeño para que quepan sin
 pisar a los de las esquinas.
 
+### Objetos
+
+El panel **Objetos**, bajo las miniaturas, lista lo que hay en la página actual
+de arriba abajo en orden de apilado. Desde ahí se selecciona, se reordena
+arrastrando, y se oculta, bloquea o elimina cada elemento. Lo oculto sigue en el
+documento pero no se dibuja ni se exporta.
+
 ### Páginas
 Reordenar arrastrando las miniaturas · girar ±90°/180° · duplicar · eliminar ·
 insertar página en blanco · añadir otro PDF (unir) · **Extraer** las páginas
@@ -146,6 +153,7 @@ src/
     Inspector.tsx       Propiedades de la selección
     TextPanel.tsx       Contenido del cuadro de texto seleccionado
     SizePanel.tsx       Tamaño, posición y relación de aspecto
+    ObjectsPanel.tsx    Lista de objetos de la página y su orden
     SignaturePad.tsx    Captura de firma
 docs/                   Plan, arquitectura y decisiones técnicas
 scripts/                Pruebas headless

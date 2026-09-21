@@ -5,7 +5,7 @@
  *   npm run test:store
  */
 import { useEditor } from '../src/store'
-import type { PageItem } from '../src/types'
+import type { Annotation, PageItem } from '../src/types'
 
 let failures = 0
 
@@ -91,6 +91,52 @@ function deletingTheCroppedPage() {
   })())
 }
 
+const shape = (id: string, pageId: string): Annotation => ({
+  id, pageId, type: 'rect',
+  x: 0, y: 0, w: 10, h: 10, opacity: 1, locked: false,
+  stroke: '#000', strokeWidth: 1, fill: null,
+})
+
+function objectStacking() {
+  seed()
+  useEditor.setState({
+    annotations: [shape('a', 'p1'), shape('x', 'p2'), shape('b', 'p1'), shape('c', 'p1')],
+    selectedAnnIds: [],
+  })
+  const s = useEditor.getState()
+
+  // Bring 'c' to the bottom of page 1's stack.
+  s.reorderPageAnnotations('p1', ['c', 'a', 'b'])
+  const after = useEditor.getState().annotations
+  check('reordering rewrites the page stack',
+    after.filter(a => a.pageId === 'p1').map(a => a.id).join() === 'c,a,b',
+    after.map(a => a.id).join())
+  check('the other page keeps its slot in the global list',
+    after[1].id === 'x', after.map(a => a.id).join())
+
+  s.reorderPageAnnotations('p1', ['c', 'a'])
+  check('an incomplete order is rejected rather than losing an object',
+    useEditor.getState().annotations.filter(a => a.pageId === 'p1').length === 3)
+}
+
+function objectFlags() {
+  seed()
+  useEditor.setState({ annotations: [shape('a', 'p1')], selectedAnnIds: ['a'] })
+  const s = useEditor.getState()
+
+  s.toggleAnnotation('a', 'hidden')
+  check('hiding an object sets the flag', useEditor.getState().annotations[0].hidden === true)
+  check('hiding it also drops it from the selection',
+    useEditor.getState().selectedAnnIds.length === 0)
+
+  s.toggleAnnotation('a', 'hidden')
+  check('it can be shown again', !useEditor.getState().annotations[0].hidden)
+
+  s.toggleAnnotation('a', 'locked')
+  check('locking is independent of the selection',
+    useEditor.getState().annotations[0].locked === true)
+}
+
 function undoRedo() {
   const s = seed()
   s.rotatePages(['p1'], 90)
@@ -104,6 +150,8 @@ function undoRedo() {
 cropModeExits()
 applyingCropLeavesTheMode()
 deletingTheCroppedPage()
+objectStacking()
+objectFlags()
 undoRedo()
 
 console.log(failures ? `\n${failures} comprobación(es) fallida(s)` : '\nTodo correcto')

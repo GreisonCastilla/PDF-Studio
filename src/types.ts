@@ -58,6 +58,8 @@ interface AnnBase {
   locked: boolean
   /** Size at insertion time. The reset button in the size panel returns here. */
   initial?: { w: number; h: number }
+  /** Hidden objects are neither drawn nor exported, but stay in the document. */
+  hidden?: boolean
 }
 
 export interface TextAnn extends AnnBase {

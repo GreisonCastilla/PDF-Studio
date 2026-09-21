@@ -64,6 +64,8 @@ interface Editor extends DocState {
   deleteAnnotations(ids: string[]): void
   duplicateAnnotations(ids: string[]): void
   reorderAnnotation(id: string, dir: 'front' | 'back' | 'forward' | 'backward'): void
+  reorderPageAnnotations(pageId: string, orderedIds: string[]): void
+  toggleAnnotation(id: string, key: 'locked' | 'hidden'): void
 
   // ---- ui
   setTool(t: Tool): void
@@ -333,6 +335,37 @@ export const useEditor = create<Editor>()((set, get) => ({
       arr.splice(to, 0, item)
       return { annotations: arr }
     })
+  },
+
+  /**
+   * Rewrites the stacking order of one page's objects. The document keeps a
+   * single flat list, so the page's entries are dropped back into the same
+   * global slots they already occupied and no other page shifts.
+   */
+  reorderPageAnnotations(pageId, orderedIds) {
+    const current = get().annotations
+    const onPage = new Map(current.filter(a => a.pageId === pageId).map(a => [a.id, a]))
+    const ordered = orderedIds
+      .map(id => onPage.get(id))
+      .filter((a): a is Annotation => !!a)
+    if (ordered.length !== onPage.size) return
+
+    get().pushHistory()
+    set(s => {
+      const slots: number[] = []
+      s.annotations.forEach((a, i) => { if (a.pageId === pageId) slots.push(i) })
+      const next = [...s.annotations]
+      slots.forEach((slot, k) => { next[slot] = ordered[k] })
+      return { annotations: next }
+    })
+  },
+
+  toggleAnnotation(id, key) {
+    get().pushHistory()
+    set(s => ({
+      annotations: s.annotations.map(a => (a.id === id ? { ...a, [key]: !a[key] } : a)),
+      selectedAnnIds: key === 'hidden' ? s.selectedAnnIds.filter(x => x !== id) : s.selectedAnnIds,
+    }))
   },
 
   setTool: t => set({

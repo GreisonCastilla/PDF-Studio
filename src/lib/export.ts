@@ -114,7 +114,7 @@ export async function buildPdf(
       )
     }
 
-    const anns = state.annotations.filter(a => a.pageId === item.id)
+    const anns = state.annotations.filter(a => a.pageId === item.id && !a.hidden)
     for (const ann of anns) await drawAnnotation(page, item, ann, rot, getFont, getImage)
   }
 

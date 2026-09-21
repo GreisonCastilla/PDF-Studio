@@ -106,20 +106,78 @@ function Body({ a, box }: { a: Annotation; box: Rect }) {
 }
 
 /** One annotation plus, when selected, a hit area so thin strokes stay grabbable. */
+/** How wide a transparent stroke has to be before it is comfortable to grab. */
+const grabWidth = (strokeWidth: number) => Math.max(12, strokeWidth + 8)
+
+/**
+ * The area that responds to the pointer, which is deliberately *not* the
+ * bounding box for every kind of object.
+ *
+ * A signature, a diagonal arrow or an unfilled rectangle only cover a fraction
+ * of the box they occupy. Claiming the whole box would let them sit invisibly on
+ * top of their neighbours and swallow clicks meant for whatever is underneath —
+ * which is exactly what makes objects feel unresponsive when several are close
+ * together. So each shape is grabbed by what it actually draws.
+ */
+function HitArea({ ann, box }: { ann: Annotation; box: Rect }) {
+  switch (ann.type) {
+    case 'image':
+    case 'text':
+      return <rect x={box.x} y={box.y} width={box.w} height={box.h} fill="transparent" pointerEvents="all" />
+
+    case 'rect':
+    case 'ellipse': {
+      const a = ann as ShapeAnn
+      // A filled shape is solid; an outlined one is grabbed by its outline, so
+      // anything framed by it stays reachable.
+      const common = {
+        fill: a.fill ? 'transparent' : 'none',
+        stroke: 'transparent',
+        strokeWidth: grabWidth(a.strokeWidth),
+        pointerEvents: (a.fill ? 'all' : 'stroke') as 'all' | 'stroke',
+      }
+      return a.type === 'rect'
+        ? <rect x={box.x} y={box.y} width={box.w} height={box.h} {...common} />
+        : <ellipse cx={box.x + box.w / 2} cy={box.y + box.h / 2} rx={box.w / 2} ry={box.h / 2} {...common} />
+    }
+
+    case 'line':
+    case 'arrow': {
+      const a = ann as LineAnn
+      return (
+        <line
+          x1={a.x} y1={a.y} x2={a.x + a.w} y2={a.y + a.h}
+          stroke="transparent" strokeWidth={grabWidth(a.strokeWidth)}
+          strokeLinecap="round" pointerEvents="stroke"
+        />
+      )
+    }
+
+    case 'draw':
+    case 'highlight': {
+      const a = ann as DrawAnn
+      return (
+        <g stroke="transparent" strokeWidth={grabWidth(a.strokeWidth)} fill="none"
+          strokeLinecap="round" strokeLinejoin="round" pointerEvents="stroke">
+          {a.strokes.map((stroke, i) => <path key={i} d={strokeToPath(stroke)} />)}
+        </g>
+      )
+    }
+  }
+}
+
 export const AnnotationNode = memo(function AnnotationNode(
   { ann, selected, preview, onPointerDown, onDoubleClick }: Props,
 ) {
   const box = normalizeRect(ann)
   return (
     <g
+      data-ann={ann.id}
       className={`ann${ann.locked ? ' locked' : ''}`}
       onPointerDown={preview ? undefined : onPointerDown}
       onDoubleClick={onDoubleClick}
     >
-      {!preview && (
-        <rect x={box.x - 4} y={box.y - 4} width={box.w + 8} height={box.h + 8}
-          fill="transparent" pointerEvents="all" />
-      )}
+      {!preview && <HitArea ann={ann} box={box} />}
       <Body a={ann} box={box} />
       {selected && <rect className="outline" x={box.x} y={box.y} width={box.w} height={box.h} pointerEvents="none" />}
     </g>

@@ -5,6 +5,7 @@ import { renderPage } from '../lib/pdfjs'
 import { displaySize } from '../lib/geometry'
 import { Copy, CropIcon, Plus, RotateCw, Trash } from './Icons'
 import { scrollToPage } from '../lib/scroll'
+import { ObjectsPanel } from './ObjectsPanel'
 
 const THUMB_W = 150
 
@@ -86,6 +87,7 @@ export function Thumbnails() {
       <div className="panel-body">
         {pages.map((p, i) => <Thumb key={p.id} item={p} index={i} />)}
       </div>
+      <ObjectsPanel />
     </aside>
   )
 }

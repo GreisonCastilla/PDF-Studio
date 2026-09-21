@@ -188,7 +188,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
   line-height: 0;
 }
 .page-shell canvas { display: block; }
-.page-overlay { position: absolute; inset: 0; overflow: visible; touch-action: none; }
+.page-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  touch-action: none;
+  /* Text selection and native image dragging both cancel the pointer stream
+     mid-gesture, which used to leave objects stuck halfway through a drag. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.page-overlay image { -webkit-user-drag: none; }
 .page-label {
   position: absolute; top: -20px; left: 0;
   font-size: 11px; color: var(--muted);
@@ -388,3 +398,61 @@ input[type="color"] {
 .size-field input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none; margin: 0;
 }
+
+/* ---------- objects / layers panel ---------- */
+.objects-panel {
+  border-top: 1px solid var(--border);
+  background: var(--chrome-2);
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  /* Enough to read at a glance, never enough to squeeze out the page strip. */
+  max-height: 44%;
+}
+.objects-panel .panel-head { border-bottom: 0; }
+.objects-panel .unit { text-transform: none; letter-spacing: 0; }
+
+.objects-empty {
+  margin: 0; padding: 0 12px 12px;
+  font-size: 12px; color: var(--muted);
+}
+
+.objects-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 6px 8px;
+  overflow-y: auto;
+}
+
+.object-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.object-row:hover { background: var(--chrome); }
+.object-row.selected {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+}
+.object-row.hidden { opacity: .45; }
+.object-row.drop-before { box-shadow: 0 -2px 0 var(--accent); }
+.object-row.drop-after { box-shadow: 0 2px 0 var(--accent); }
+
+.object-icon { display: grid; place-items: center; color: var(--muted); }
+.object-row.selected .object-icon { color: var(--accent); }
+.object-label {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.object-row .mini { opacity: 0; }
+.object-row:hover .mini,
+.object-row.selected .mini,
+.object-row.hidden .mini { opacity: 1; }

@@ -48,6 +48,23 @@ export function PageView({ item, index, scale }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const dragRef = useRef<Drag | null>(null)
+
+  // The window listeners stay the same objects for the whole gesture, and read
+  // the current handlers through this ref, so re-renders never detach them.
+  const liveRef = useRef<{ move: (e: PointerEvent) => void; up: (e: PointerEvent) => void }>({
+    move: () => {},
+    up: () => {},
+  })
+  const winMove = useCallback((e: PointerEvent) => liveRef.current.move(e), [])
+  const winUp = useCallback((e: PointerEvent) => liveRef.current.up(e), [])
+  const endDrag = useCallback(() => {
+    window.removeEventListener('pointermove', winMove)
+    window.removeEventListener('pointerup', winUp)
+    window.removeEventListener('pointercancel', winUp)
+  }, [winMove, winUp])
+
+  // A page unmounting mid-drag (reorder, delete) must not leave listeners behind.
+  useEffect(() => endDrag, [endDrag])
   const [draft, setDraft] = useState<Annotation | null>(null)
   const [cropDraft, setCropDraft] = useState<Rect | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
@@ -118,13 +135,31 @@ export function PageView({ item, index, scale }: Props) {
     }
   }
 
+  /**
+   * Gestures are driven from window listeners rather than from the element that
+   * captured the pointer.
+   *
+   * Pointer capture can be taken away mid-gesture — the browser starting a native
+   * image drag is the usual culprit — and when that happens the element stops
+   * receiving pointermove and the object freezes halfway through the drag.
+   * Window listeners keep firing either way; the capture is still requested
+   * because it helps on touch, but nothing depends on it surviving.
+   */
+  const beginDrag = (drag: Drag, e: React.PointerEvent) => {
+    dragRef.current = drag
+    window.addEventListener('pointermove', winMove)
+    window.addEventListener('pointerup', winUp)
+    window.addEventListener('pointercancel', winUp)
+    try { svgRef.current?.setPointerCapture(e.pointerId) } catch { /* not critical */ }
+  }
+
   const onSurfaceDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return
     const p = toPt(e)
-    svgRef.current?.setPointerCapture(e.pointerId)
 
     if (cropping) {
-      dragRef.current = { kind: 'crop', origin: p }
+      e.preventDefault()
+      beginDrag({ kind: 'crop', origin: p }, e)
       setCropDraft({ x: p.x, y: p.y, w: 0, h: 0 })
       return
     }
@@ -144,33 +179,38 @@ export function PageView({ item, index, scale }: Props) {
     }
     const ann = newAnnotation(tool, p)
     if (!ann) return
-    if (ann.type === 'draw' || ann.type === 'highlight') {
-      dragRef.current = { kind: 'ink', ann: ann as DrawAnn }
-    } else {
-      dragRef.current = { kind: 'create', ann, origin: p }
-    }
+    e.preventDefault()
+    beginDrag(
+      ann.type === 'draw' || ann.type === 'highlight'
+        ? { kind: 'ink', ann: ann as DrawAnn }
+        : { kind: 'create', ann, origin: p },
+      e,
+    )
     setDraft(ann)
   }
 
   const onAnnDown = (ann: Annotation) => (e: React.PointerEvent) => {
     if (tool !== 'select' || ann.locked || e.button !== 0) return
     e.stopPropagation()
-    svgRef.current?.setPointerCapture(e.pointerId)
+    // Stops the browser dragging the image or starting a text selection, either
+    // of which cancels the pointer stream we are relying on.
+    e.preventDefault()
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
     select([ann.id])
     pushHistory()
     const p = toPt(e)
     setDragging(ann.id)
-    dragRef.current = { kind: 'move', grab: { x: p.x - ann.x, y: p.y - ann.y }, base: ann }
+    beginDrag({ kind: 'move', grab: { x: p.x - ann.x, y: p.y - ann.y }, base: ann }, e)
   }
 
   const onHandleDown = (ann: Annotation, handle: Handle) => (e: React.PointerEvent) => {
     e.stopPropagation()
-    svgRef.current?.setPointerCapture(e.pointerId)
+    e.preventDefault()
     pushHistory()
-    dragRef.current = { kind: 'resize', origin: toPt(e), base: ann, handle }
+    beginDrag({ kind: 'resize', origin: toPt(e), base: ann, handle }, e)
   }
 
-  const onMove = (e: React.PointerEvent) => {
+  const onMove = (e: PointerEvent) => {
     const d = dragRef.current
     if (!d) return
     const p = toPt(e)
@@ -223,10 +263,15 @@ export function PageView({ item, index, scale }: Props) {
     )
   }
 
-  const onUp = (e: React.PointerEvent) => {
+  const onUp = (e: PointerEvent) => {
     const d = dragRef.current
     dragRef.current = null
-    svgRef.current?.releasePointerCapture(e.pointerId)
+    endDrag()
+    try {
+      if (svgRef.current?.hasPointerCapture(e.pointerId)) {
+        svgRef.current.releasePointerCapture(e.pointerId)
+      }
+    } catch { /* already gone */ }
     setDragging(null)
     if (!d) return
 
@@ -253,6 +298,9 @@ export function PageView({ item, index, scale }: Props) {
     }
   }
 
+  liveRef.current.move = onMove
+  liveRef.current.up = onUp
+
   const applyCrop = () => {
     if (!cropDraft) return
     // Stored unrotated, so later rotations do not shift the window.
@@ -273,7 +321,7 @@ export function PageView({ item, index, scale }: Props) {
   }, [])
 
   const editingAnn = editing ? pageAnns.find(a => a.id === editing) as TextAnn | undefined : undefined
-  const selectedHere = pageAnns.filter(a => selectedAnnIds.includes(a.id))
+  const selectedHere = pageAnns.filter(a => selectedAnnIds.includes(a.id) && !a.hidden)
 
   return (
     <div className={`page-wrap${raised ? ' raised' : ''}`} data-page={item.id}>
@@ -291,14 +339,11 @@ export function PageView({ item, index, scale }: Props) {
           height={size.h * scale}
           viewBox={`0 0 ${size.w} ${size.h}`}
           onPointerDown={onSurfaceDown}
-          onPointerMove={onMove}
-          onPointerUp={onUp}
-          onPointerCancel={onUp}
           style={{ cursor: tool === 'select' ? 'default' : 'crosshair' }}
         >
           <rect x={0} y={0} width={size.w} height={size.h} fill="transparent" />
 
-          {pageAnns.map(a => a.id === editing ? null : (
+          {pageAnns.map(a => (a.id === editing || a.hidden) ? null : (
             <AnnotationNode
               key={a.id}
               ann={a}

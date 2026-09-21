@@ -36,3 +36,7 @@ export const Moon = ({ size }: P) => <svg {...s(size)}><path d="M20 14.5A8.5 8.5
 export const Link = ({ size }: P) => <svg {...s(size)}><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1" /></svg>
 export const Unlink = ({ size }: P) => <svg {...s(size)}><path d="M16 8l2-2a5 5 0 0 0-7-7l-2 2" /><path d="M8 16l-2 2a5 5 0 0 0 7 7l2-2" /><path d="M3 3l18 18" /></svg>
 export const Reset = ({ size }: P) => <svg {...s(size)}><path d="M3 12a9 9 0 1 0 2.6-6.4M3 4v5h5" /></svg>
+export const Eye = ({ size }: P) => <svg {...s(size)}><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+export const EyeOff = ({ size }: P) => <svg {...s(size)}><path d="M10.6 6.2A9.9 9.9 0 0 1 12 6c6.4 0 10 6 10 6a18 18 0 0 1-3.2 3.8M6.5 7.7A18 18 0 0 0 2 12s3.6 6 10 6a9.6 9.6 0 0 0 4-.8" /><path d="M3 3l18 18M9.9 9.9a3 3 0 0 0 4.2 4.2" /></svg>
+export const Unlock = ({ size }: P) => <svg {...s(size)}><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 7.5-2" /></svg>
+export const Layers = ({ size }: P) => <svg {...s(size)}><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 13 9 5 9-5" /></svg>

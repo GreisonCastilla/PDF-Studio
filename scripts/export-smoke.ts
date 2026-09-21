@@ -109,6 +109,17 @@ async function main() {
   check('output is a real PDF', outBytes.length > 1000 &&
     new TextDecoder().decode(outBytes.slice(0, 5)) === '%PDF-')
 
+  // A hidden object stays in the document but must not reach the page.
+  const hiddenBytes = await buildPdf({
+    sources: { src: { id: 'src', name: 'seed.pdf', bytes, pageCount: 2 } },
+    assets: {},
+    pages,
+    annotations: annotations.map(a => ({ ...a, hidden: true })),
+  })
+  check('hidden objects are left out of the export',
+    hiddenBytes.length < outBytes.length,
+    `${hiddenBytes.length} < ${outBytes.length}`)
+
   console.log(failures ? `\n${failures} comprobación(es) fallida(s)` : '\nTodo correcto')
   process.exit(failures ? 1 : 0)
 }

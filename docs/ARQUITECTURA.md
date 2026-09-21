@@ -259,3 +259,44 @@ alto queda fuera de la pantalla mientras trabajas en la parte de arriba. Cuando
 la página termina justo debajo de la selección, los botones se meten dentro de
 ella; y mientras no hay nada seleccionado, el aviso se fija al viewport, porque
 todavía no existe nada en la página a lo que anclarlo.
+
+## Qué responde al puntero
+
+La zona sensible al clic de una anotación **no** es su caja delimitadora.
+
+Una firma diagonal, una flecha o un rectángulo sin relleno ocupan una fracción
+mínima del rectángulo que los contiene. Si ese rectángulo capturase el puntero,
+cada objeto se convertiría en una lámina invisible sobre sus vecinos y se
+tragaría las pulsaciones dirigidas a lo que hay debajo. Eso es justo lo que hace
+que los objetos parezcan no responder cuando hay varios cerca.
+
+Así que cada tipo se agarra por lo que realmente dibuja: las formas rellenas y
+las imágenes por su superficie, las formas con solo contorno por ese contorno,
+y las líneas y la tinta por un trazo transparente y ancho sobre su propia
+trayectoria.
+
+## Por qué el arrastre vive en `window`
+
+Los gestos se conducen desde escuchadores en `window`, no desde el elemento que
+capturó el puntero.
+
+La captura se puede perder a mitad de gesto —lo habitual es que el navegador
+arranque su propio arrastre nativo de una imagen, o una selección de texto—, y
+cuando eso ocurre el elemento deja de recibir `pointermove` y el objeto se queda
+congelado a medio camino. Los escuchadores de `window` siguen disparando en
+cualquier caso. La captura se pide igualmente, porque ayuda en táctil, pero nada
+depende de que sobreviva.
+
+A la vez se ataca la causa: el `pointerdown` que inicia un arrastre llama a
+`preventDefault()`, y la capa de edición desactiva la selección de texto y el
+arrastre nativo de imágenes.
+
+## Orden de apilado
+
+El documento guarda una sola lista plana de anotaciones y su orden es el orden de
+pintado. El panel de objetos la muestra al revés, que es como se lee cualquier
+lista de capas: lo de arriba es lo que está delante.
+
+Reordenar dentro de una página devuelve los elementos a los mismos huecos
+globales que ya ocupaban, de modo que ninguna otra página se desplaza. La acción
+rechaza una lista incompleta en lugar de perder objetos por el camino.
