@@ -60,7 +60,7 @@ export function PageView({ item, index, scale }: Props) {
   const selectedAnnIds = useEditor(useShallow(s => s.selectedAnnIds))
   const tool = useEditor(s => s.tool)
   const style = useEditor(s => s.style)
-  const cropping = useEditor(s => s.cropTarget === item.id)
+  const cropping = useEditor(s => s.cropTarget === item.id && s.tool === 'crop')
   const draggingAnnId = useEditor(s => s.draggingAnnId)
   const keepAspect = useEditor(s => s.keepAspect)
 
@@ -83,6 +83,10 @@ export function PageView({ item, index, scale }: Props) {
     const handle = renderPage(canvas, item, scale)
     return () => handle.cancel()
   }, [item, scale])
+
+  useEffect(() => {
+    if (!cropping) setCropDraft(null)
+  }, [cropping])
 
   const toPt = useCallback((e: { clientX: number; clientY: number }): Point => {
     const r = svgRef.current!.getBoundingClientRect()
@@ -365,15 +369,43 @@ export function PageView({ item, index, scale }: Props) {
           />
         )}
 
-        {cropping && (
-          <div style={{
-            position: 'absolute', bottom: -46, left: 0, display: 'flex', gap: 8,
-          }}>
-            <button className="btn primary" disabled={!cropDraft} onClick={applyCrop}>Aplicar recorte</button>
-            {item.crop && <button className="btn" onClick={() => { setCrop(item.id, null); setCropDraft(null) }}>Quitar recorte</button>}
-            <button className="btn" onClick={() => { setCropDraft(null); setCropTarget(null) }}>Cancelar</button>
+        {cropping && cropDraft && (() => {
+          const r = normalizeRect(cropDraft)
+          const right = (r.x + r.w) * scale
+          const bottom = (r.y + r.h) * scale
+          // Below the selection normally; tucked inside it when the page ends
+          // right there and the buttons would fall out of view.
+          const inside = bottom + 52 > size.h * scale
+          return (
+            <div
+              className="crop-actions"
+              style={{
+                left: right,
+                top: bottom,
+                transform: inside ? 'translate(-100%, -100%) translate(-8px, -8px)' : 'translate(-100%, 8px)',
+              }}
+            >
+              {item.crop && (
+                <button className="btn" onClick={() => { setCrop(item.id, null); setCropDraft(null) }}>
+                  Quitar recorte
+                </button>
+              )}
+              <button className="btn" onClick={() => setCropDraft(null)}>Cancelar</button>
+              <button className="btn primary" onClick={applyCrop}>Aplicar recorte</button>
+            </div>
+          )
+        })()}
+
+        {cropping && !cropDraft && (
+          <div className="crop-hint">
+            <span>Arrastra sobre la página para elegir la zona</span>
+            {item.crop && (
+              <button className="btn" onClick={() => setCrop(item.id, null)}>Quitar recorte</button>
+            )}
+            <button className="btn" onClick={() => setCropTarget(null)}>Salir</button>
           </div>
         )}
+
       </div>
     </div>
   )

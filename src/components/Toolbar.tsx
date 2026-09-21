@@ -26,7 +26,7 @@ export function Toolbar({ onSign }: { onSign: () => void }) {
   const {
     tool, setTool, pages, selectedPageIds, activePageId, zoom, setZoom,
     undo, redo, importFiles, addAsset, docName,
-    rotatePages, deletePages, setCropTarget, setBusy, insertBlankPage,
+    rotatePages, deletePages, setCropTarget, setBusy, insertBlankPage, cropTarget,
   } = store
   const imageInput = useRef<HTMLInputElement>(null)
   const pdfInput = useRef<HTMLInputElement>(null)
@@ -89,7 +89,7 @@ export function Toolbar({ onSign }: { onSign: () => void }) {
           className={`btn icon${tool === 'crop' ? ' active' : ''}`}
           title="Recortar página (C)"
           disabled={!activePageId}
-          onClick={() => setCropTarget(activePageId)}
+          onClick={() => setCropTarget(cropTarget === activePageId ? null : activePageId)}
         >
           <CropIcon />
         </button>

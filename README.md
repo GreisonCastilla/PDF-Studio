@@ -54,6 +54,7 @@ npm run dev        # http://localhost:5173
 | `npm test` | Todas las pruebas headless |
 | `npm run test:export` | Pruebas del exportador y de la geometría |
 | `npm run test:transform` | Pruebas del redimensionado y la relación de aspecto |
+| `npm run test:store` | Pruebas del estado: modo recorte, deshacer, borrado |
 
 ---
 
@@ -73,6 +74,12 @@ npm run dev        # http://localhost:5173
 | Imagen | — | PNG, JPEG y cualquier otro formato (se reconvierte a PNG) |
 | Firma | — | Pad vectorial, o imagen; guarda hasta 6 firmas reutilizables |
 | Recortar | `C` | Ajusta el *CropBox* de la página |
+
+Al recortar, los botones de confirmar aparecen pegados a la esquina inferior
+derecha de la zona que has marcado, y se meten dentro de ella si la página se
+acaba justo ahí. El botón de la barra superior funciona como interruptor: se
+pulsa para entrar y para salir, igual que `Esc` o elegir cualquier otra
+herramienta.
 
 El texto se escribe directamente sobre la página (doble clic para reabrir un
 cuadro existente) **o** desde el panel **Texto seleccionado**, arriba del todo en

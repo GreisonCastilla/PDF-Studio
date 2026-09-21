@@ -13,7 +13,9 @@
     "isolatedModules": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["node"]
+    // The store reaches into src/, which uses Vite's `?url` imports, so the test
+    // project needs Vite's ambient types too.
+    "types": ["node", "vite/client"]
   },
   "include": ["scripts", "vite.config.ts"]
 }

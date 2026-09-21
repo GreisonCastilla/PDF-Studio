@@ -235,3 +235,27 @@ non-scaling-stroke`, que los mantiene de un píxel sea cual sea la escala.
 Cuando un lado mide menos de 30 px en pantalla, su tirador central no se dibuja:
 no cabría sin solaparse con los de las esquinas, y un tirador que pisa a otro es
 peor que uno que falta.
+
+## El modo recorte
+
+Recortar es el único modo con estado propio: además de la herramienta activa hay
+una página señalada, `cropTarget`. Dos estados que describen la misma cosa se
+desincronizan en cuanto uno se actualiza sin el otro, y eso es exactamente lo que
+pasaba: `setTool` cambiaba de herramienta sin tocar `cropTarget`, así que la
+página seguía en modo recorte por detrás de la herramienta recién elegida.
+
+Ahora salir del recorte está centralizado: `setTool` limpia el objetivo cuando la
+herramienta nueva no es la de recortar, aplicar o quitar un recorte devuelve a la
+herramienta de selección, y borrar la página señalada libera el objetivo en lugar
+de dejarlo apuntando a algo que ya no existe. La vista exige además las dos
+condiciones a la vez (`cropTarget === item.id && tool === 'crop'`), de modo que
+ningún estado intermedio puede pintar el modo recorte.
+
+`scripts/store-smoke.ts` recorre estas transiciones sin navegador.
+
+Los botones de confirmación se anclan a la esquina inferior derecha de la
+selección. Antes colgaban del borde inferior de la página, que en un documento
+alto queda fuera de la pantalla mientras trabajas en la parte de arriba. Cuando
+la página termina justo debajo de la selección, los botones se meten dentro de
+ella; y mientras no hay nada seleccionado, el aviso se fija al viewport, porque
+todavía no existe nada en la página a lo que anclarlo.

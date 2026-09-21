@@ -225,6 +225,43 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .crop-veil { fill: rgba(10, 12, 20, .5); }
 
+/* Anchored to the bottom-right of the crop selection, so the confirm button is
+   always next to what it acts on instead of hanging off the page. */
+.crop-actions {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  gap: 6px;
+  line-height: normal;
+  white-space: nowrap;
+  padding: 5px;
+  border-radius: 12px;
+  background: var(--chrome);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.crop-actions .btn { height: 30px; }
+
+/* Fixed to the viewport: before a selection exists there is nothing on the page
+   to anchor to, and a tall page would push it out of sight. */
+.crop-hint {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 16px;
+  border-radius: 999px;
+  background: var(--chrome);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.crop-hint span { color: var(--muted); font-size: 13px; }
+.crop-hint .btn { height: 30px; }
+
 /* ---------- inspector ---------- */
 .field { margin-bottom: 12px; }
 .field label {

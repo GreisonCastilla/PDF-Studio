@@ -206,6 +206,9 @@ export const useEditor = create<Editor>()((set, get) => ({
         annotations: s.annotations.filter(a => !ids.includes(a.pageId)),
         selectedPageIds: [],
         activePageId: pages.some(p => p.id === s.activePageId) ? s.activePageId : pages[0]?.id ?? null,
+        // Never leave the crop target pointing at a page that no longer exists.
+        cropTarget: s.cropTarget && ids.includes(s.cropTarget) ? null : s.cropTarget,
+        tool: s.cropTarget && ids.includes(s.cropTarget) ? 'select' : s.tool,
       }
     })
   },
@@ -254,6 +257,7 @@ export const useEditor = create<Editor>()((set, get) => ({
     set(s => ({
       pages: s.pages.map(p => (p.id === pageId ? { ...p, crop: crop && normalizeRect(crop) } : p)),
       cropTarget: null,
+      tool: 'select',
     }))
   },
 
@@ -331,7 +335,13 @@ export const useEditor = create<Editor>()((set, get) => ({
     })
   },
 
-  setTool: t => set({ tool: t, selectedAnnIds: t === 'select' ? get().selectedAnnIds : [] }),
+  setTool: t => set({
+    tool: t,
+    // Leaving the crop tool has to drop its target as well, or the page stays in
+    // crop mode behind whatever tool was picked next.
+    cropTarget: t === 'crop' ? get().cropTarget : null,
+    selectedAnnIds: t === 'select' ? get().selectedAnnIds : [],
+  }),
   setStyle: p => set(s => ({ style: { ...s.style, ...p } })),
   select: ids => set({ selectedAnnIds: ids }),
   selectPages: ids => set({ selectedPageIds: ids }),
